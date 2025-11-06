@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ManageImpactStories from './ManageImpactStories';
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
@@ -174,6 +175,22 @@ const AdminDashboard = () => {
         <h1>🧠 Admin Control Panel</h1>
         <div style={styles.userInfo}>
           <span>{user.name}</span>
+          <button
+            className="btn primary"
+            style={{ marginRight: '12px' }}
+            onClick={() => {
+              setActiveTab('impact');
+              setTimeout(() => {
+                const el = document.getElementById('impact-title-input');
+                if (el) {
+                  el.focus();
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 250);
+            }}
+          >
+            ➕ Add New Impact Story
+          </button>
           <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </header>
@@ -247,6 +264,12 @@ const AdminDashboard = () => {
           style={activeTab === 'users' ? styles.tabActive : styles.tab}
         >
           👥 Users
+        </button>
+        <button
+          onClick={() => setActiveTab('impact')}
+          style={activeTab === 'impact' ? styles.tabActive : styles.tab}
+        >
+          📚 Impact Stories
         </button>
       </div>
 
@@ -542,6 +565,13 @@ const AdminDashboard = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Impact Stories Tab (embedded) */}
+        {activeTab === 'impact' && (
+          <div>
+            <ManageImpactStories embedded={true} />
           </div>
         )}
       </div>

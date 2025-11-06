@@ -28,6 +28,11 @@ function LandingPage() {
                 Login
               </Link>
             </li>
+            <li>
+              <Link to="/impact-stories" className="btn" onClick={() => setMenuOpen(false)}>
+                Impact Stories
+              </Link>
+            </li>
             {/* <li>
               <Link to="/register" className="btn primary" onClick={() => setMenuOpen(false)}>
                 Sign Up

@@ -151,6 +151,141 @@ header {
   overflow: hidden;
 }
 
+/* === Impact Stories Full-Page Layout === */
+.impact-hero {
+  background: linear-gradient(180deg, rgba(10,132,255,0.06) 0%, rgba(248,249,250,1) 100%);
+  padding: 80px 2rem 24px;
+  text-align: center;
+}
+.impact-hero-inner { max-width: 1100px; margin: 0 auto; }
+.impact-hero h1 { font-size: 2.2rem; margin-bottom: 8px; }
+.impact-hero .muted { color: #6c757d; margin-bottom: 12px; }
+.impact-stats { margin-top: 12px; display:inline-flex; gap:24px; }
+.impact-stats div { background:white; padding:10px 14px; border-radius:8px; box-shadow:0 4px 14px rgba(15,23,42,0.04); }
+
+.impact-layout { display: grid; grid-template-columns: 260px 1fr; gap: 28px; max-width: 1200px; margin: 20px auto; padding: 0 1rem 40px; }
+.impact-index { position: sticky; top: 90px; align-self: start; }
+.impact-index nav ul { list-style: none; padding: 0; }
+.impact-index nav li { margin: 8px 0; }
+.impact-index nav a { text-decoration:none; color:#2c3e50; padding:8px 10px; display:block; border-radius:6px; }
+.impact-index nav a:hover { background: rgba(74,144,226,0.06); color:#0b76ef; }
+
+.impact-content { display: flex; flex-direction: column; gap: 36px; }
+.impact-section { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 30px rgba(15,23,42,0.03); display: flex; flex-direction: column; }
+.impact-media { height: 340px; background-size: cover; background-position: center; filter: saturate(1.03) contrast(0.96); }
+.impact-body { padding: 22px; max-width: 100%; }
+.impact-meta { color: #6c757d; font-size: 0.95rem; margin-bottom: 8px; }
+.impact-title { font-size: 1.6rem; margin: 6px 0 10px; }
+.impact-quote { font-style: italic; background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.6)); padding: 12px; border-left: 4px solid #4A90E2; margin-bottom: 12px; color:#2b3a4a; }
+.impact-summary { font-weight: 600; margin-bottom: 12px; }
+.impact-video { margin: 10px 0; }
+.impact-details { color: #344154; line-height: 1.7; white-space: pre-wrap; margin-top: 12px; }
+
+.impact-footer { padding: 28px 2rem; margin-top: 40px; display:flex; justify-content:space-between; max-width:1200px; margin-left:auto; margin-right:auto; }
+
+@media (max-width: 880px) {
+  .impact-layout { grid-template-columns: 1fr; padding: 0 1rem 24px; }
+  .impact-index { position: relative; top: 0; margin-bottom: 12px; }
+  .impact-media { height: 220px; }
+}
+
+/* === Chatbot Widget === */
+:root {
+  --chat-size: clamp(300px, 20vw, 420px);
+  --header-height: 70px;
+}
+
+/* When chat is open, push page content to make room for the panel */
+body.chat-open .main-container,
+body.chat-open .hero,
+body.chat-open .impact-layout,
+body.chat-open .impact-footer,
+body.chat-open .container,
+body.chat-open .impact-hero {
+  margin-right: var(--chat-size);
+  transition: margin-right 0.35s ease;
+}
+
+/* Do NOT change header width when chat opens; header should remain stable */
+
+.chatbot-toggle {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2000;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#4A90E2,#48bb78);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.chatbot-toggle.hidden { display: none; }
+
+.chatbot {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  height: 100vh;
+  width: 20%;
+  min-width: 300px;
+  max-width: 420px;
+  background: white;
+  border-left: 1px solid rgba(0,0,0,0.06);
+  box-shadow: -8px 0 30px rgba(17,24,39,0.08);
+  z-index: 1999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: right 0.35s ease, width 0.25s ease;
+}
+.chatbot-open { right: 0; }
+
+/* Compact mode: show a small bar aligned with header height (used on login/auth pages)
+   The component will get an extra class 'compact' via JSX when appropriate. */
+.chatbot.compact {
+  top: 0;
+  height: var(--header-height);
+  width: var(--chat-size);
+  min-width: 260px;
+  max-width: calc(var(--chat-size));
+  border-left: none;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  box-shadow: -6px 6px 18px rgba(17,24,39,0.06);
+  right: -110%;
+  transition: right 0.28s ease, width 0.2s ease;
+}
+.chatbot.compact.chatbot-open { right: 0; }
+.chatbot-header { padding: 12px 16px; background: linear-gradient(90deg,#f0f7ff,#f7fff2); border-bottom: 1px solid #eef6ff; }
+.chatbot-body { padding: 12px; overflow-y: auto; flex: 1; background: #fbfdff; }
+.chatbot-msg { margin-bottom: 12px; display: flex; }
+.chatbot-msg.user { justify-content: flex-end; }
+.chatbot-msg.bot { justify-content: flex-start; }
+.chatbot-msg-text { padding: 10px 14px; border-radius: 12px; max-width: 78%; font-size: 0.95rem; line-height: 1.4; }
+.chatbot-msg.user .chatbot-msg-text { background: #4A90E2; color: white; }
+.chatbot-msg.bot .chatbot-msg-text { background: #ffffff; border: 1px solid #e6eefc; color: #1f2937; }
+.chatbot-suggestions { padding: 8px 12px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; flex-wrap: wrap; background: #ffffff; }
+.chatbot-suggestions { padding: 8px 12px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; flex-wrap: nowrap; align-items:center; background: #ffffff; }
+.chatbot-sugg-list { display:flex; gap:8px; flex-wrap:wrap; flex:1; }
+.chatbot-sugg { padding: 6px 10px; background: #f3f6ff; border-radius: 20px; border: none; cursor: pointer; color: #0b76ef; font-size: 0.88rem; }
+.chatbot-sugg-control { margin-left: 8px; }
+.chatbot-sugg-toggle { background: transparent; border: none; color: #6b7280; cursor:pointer; padding:6px 8px; border-radius:6px; font-size:0.85rem; }
+.chatbot-input { padding: 10px; border-top: 1px solid #eef2ff; display: flex; gap: 8px; align-items: center; background: #ffffff; }
+.chatbot-input input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #e8eefc; font-size: 0.95rem; }
+.chatbot-input .btn { padding: 8px 12px; border-radius: 8px; }
+
+@media (max-width: 880px) {
+  .chatbot { right: 0; left: 0; width: 100%; min-width: auto; height: 60vh; top: auto; bottom: 0; }
+  .chatbot-toggle { right: 12px; top: auto; bottom: 12px; }
+}
+
 .hero::before {
   content: "";
   position: absolute;
@@ -201,12 +336,14 @@ header {
 /* === Auth Form Specific Styles === */
 .container {
   position: relative;
-  width: 750px;
-  height: 450px;
+  /* Increased size to better display full form content */
+  width: 900px;
+  max-width: calc(100% - 3rem);
+  height: 560px;
   border: 2px solid #4A90E2;
   box-shadow: 0 0 25px rgba(74, 144, 226, 0.3);
   overflow: hidden;
-  margin: 2rem auto;
+  margin: 2.5rem auto;
   background: #ffffff;
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/universal.css';
 import '../styles/admin_dashboard.css';
+import ManageImpactStories from './admin/ManageImpactStories';
 
 const Admin_Dashboard = () => {
   const navigate = useNavigate();
@@ -275,6 +276,9 @@ const Admin_Dashboard = () => {
               <a href="#help" onClick={() => setMenuOpen(false)}>Help</a>
             </li>
             <li>
+              <Link to="/impact-stories" onClick={() => setMenuOpen(false)}>Impact Stories</Link>
+            </li>
+            <li>
               <Link to="/Role" className="btn" onClick={() => setMenuOpen(false)}>
                 Logout
               </Link>
@@ -291,8 +295,30 @@ const Admin_Dashboard = () => {
 
       {/* Page Header (Admin specific) */}
       <div className="admin-header">
-        <h1>🛡️ Admin Dashboard</h1>
-        <p>Career Nest Platform Management</p>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h1>🛡️ Admin Dashboard</h1>
+                <p>Career Nest Platform Management</p>
+              </div>
+              <div>
+                <button
+                  className="btn primary"
+                  onClick={() => {
+                    setActiveTab('impact');
+                    // Focus the title input in the embedded ManageImpactStories form
+                    setTimeout(() => {
+                      const el = document.getElementById('impact-title-input');
+                      if (el) {
+                        el.focus();
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }, 200);
+                  }}
+                >
+                  ➕ Add New Impact Story
+                </button>
+              </div>
+            </div>
       </div>
 
       <nav className="admin-nav">
@@ -301,6 +327,12 @@ const Admin_Dashboard = () => {
           onClick={() => setActiveTab('organizations')}
         >
           🏢 Organizations
+        </button>
+        <button 
+          className={activeTab === 'impact' ? 'active' : ''}
+          onClick={() => setActiveTab('impact')}
+        >
+          📚 Impact Stories
         </button>
         <button 
           className={activeTab === 'events' ? 'active' : ''} 
@@ -450,6 +482,11 @@ const Admin_Dashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+        {activeTab === 'impact' && (
+          <div className="organizations-section">
+            <ManageImpactStories embedded={true} />
           </div>
         )}
 

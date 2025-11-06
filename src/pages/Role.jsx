@@ -87,6 +87,9 @@ const RoleSelection = () => {
             <li>
               <a href="#help" onClick={() => setMenuOpen(false)}>Help</a>
             </li>
+            <li>
+              <Link to="/impact-stories" onClick={() => setMenuOpen(false)}>Impact Stories</Link>
+            </li>
             {/* <li>
               <Link to="/AuthForm" className="btn" onClick={() => setMenuOpen(false)}>
                 Login

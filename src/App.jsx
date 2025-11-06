@@ -7,6 +7,7 @@ import OrganizationRegistration from "./pages/OrganizationRegistration";
 
 // Social Impact Dashboards
 import AdminDashboard from "./pages/admin/SocialImpactAdminDashboard";
+import ManageImpactStories from "./pages/admin/ManageImpactStories";
 import HelperDashboard from "./pages/helper/HelperDashboard";
 import DonorDashboard from "./pages/donor/DonorDashboard";
 import ReceiverDashboard from "./pages/receiver/ReceiverDashboard";
@@ -16,14 +17,18 @@ import OrganizationDashboard from "./pages/organization/SocialImpactOrgDashboard
 import Transparency from "./pages/public/Transparency";
 import ImpactPage from "./pages/public/ImpactPage";
 import AnonymousDonation from "./pages/public/AnonymousDonation";
+import ImpactStories from "./pages/public/ImpactStories";
+import Chatbot from './components/Chatbot';
 
 function App() {
   return (
     <Router>
+      <Chatbot />
       <Routes>
         {/* ========== PUBLIC ROUTES (No Login Required) ========== */}
         <Route path="/" element={<Landing />} />
         <Route path="/transparency" element={<Transparency />} />
+  <Route path="/impact-stories" element={<ImpactStories />} />
         <Route path="/impact/:qrCode" element={<ImpactPage />} />
         <Route path="/donate-anonymous" element={<AnonymousDonation />} />
 
@@ -38,6 +43,7 @@ function App() {
         {/* ========== PROTECTED DASHBOARDS (Auth Required) ========== */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/Admin_Dashboard" element={<AdminDashboard />} />
+  <Route path="/admin/impact-stories" element={<ManageImpactStories />} />
         
         <Route path="/donor" element={<DonorDashboard />} />
         <Route path="/Donor_Dashboard" element={<DonorDashboard />} />

@@ -215,6 +215,9 @@ const AuthForm = () => {
             <li>
               <a href="#help" onClick={() => setMenuOpen(false)}>Help</a>
             </li>
+            <li>
+              <Link to="/impact-stories" onClick={() => setMenuOpen(false)}>Impact Stories</Link>
+            </li>
           </ul>
           <div
             className="menu-toggle"
