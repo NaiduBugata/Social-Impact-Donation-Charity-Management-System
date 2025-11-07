@@ -1,5 +1,3 @@
-const logger = require('../utils/logger');
-
 // Custom error class
 class AppError extends Error {
   constructor(message, statusCode) {
@@ -17,8 +15,8 @@ const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 
-  // Log error
-  logger.error({
+  // Log error to console
+  console.error('ERROR:', {
     message: err.message,
     stack: err.stack,
     statusCode: err.statusCode,
