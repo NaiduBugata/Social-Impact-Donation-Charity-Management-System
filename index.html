@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Social Impact Donation & Charity Management System - AI-powered, transparent platform connecting donors, helpers, and receivers through verified, real-time, geo-aware engagement" />
     <title>🌍 Social Impact - Donation & Charity Platform</title>
+    <!-- Polyfill for Node.js globals used by simple-peer -->
+    <script>
+      if (typeof global === 'undefined') {
+        window.global = window;
+      }
+      if (typeof process === 'undefined') {
+        window.process = { env: {} };
+      }
+      if (typeof Buffer === 'undefined') {
+        window.Buffer = {
+          isBuffer: () => false
+        };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

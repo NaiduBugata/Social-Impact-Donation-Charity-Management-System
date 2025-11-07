@@ -36,6 +36,7 @@ const initializeData = () => {
         name: 'System Administrator',
         verified: true,
         kycStatus: 'approved',
+        approvalStatus: 'approved',
         trustScore: 100,
         createdAt: new Date().toISOString()
       },
@@ -48,6 +49,7 @@ const initializeData = () => {
         name: 'Rajesh Kumar',
         verified: true,
         kycStatus: 'approved',
+        approvalStatus: 'approved', // Seed donors are pre-approved
         location: { lat: 28.6139, lng: 77.2090, address: 'Delhi, India' },
         trustScore: 85,
         totalDonated: 15000,
@@ -64,6 +66,7 @@ const initializeData = () => {
         name: 'Dr. Priya Sharma',
         verified: true,
         kycStatus: 'approved',
+        approvalStatus: 'approved', // Seed helpers are pre-approved
         profession: 'Doctor',
         specialization: 'General Medicine',
         location: { lat: 28.7041, lng: 77.1025, address: 'North Delhi, India' },
@@ -83,6 +86,7 @@ const initializeData = () => {
         name: 'Amit Patel',
         verified: true,
         kycStatus: 'approved',
+        approvalStatus: 'approved',
         location: { lat: 28.6692, lng: 77.4538, address: 'Ghaziabad, UP' },
         trustScore: 78,
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -96,6 +100,7 @@ const initializeData = () => {
         name: 'Help India Foundation',
         verified: true,
         kycStatus: 'approved',
+        approvalStatus: 'approved',
         organizationType: 'NGO',
         registrationNumber: 'NGO-2020-5678',
         location: { lat: 28.5355, lng: 77.3910, address: 'Noida, UP' },
@@ -119,6 +124,7 @@ const initializeData = () => {
         raised: 325000,
         verified: true,
         active: true,
+        approvalStatus: 'approved', // Seeded campaigns are pre-approved
         createdBy: '4',
         receiverId: '4',
         organizationId: '5',
@@ -140,6 +146,7 @@ const initializeData = () => {
         raised: 50000,
         verified: true,
         active: false,
+        approvalStatus: 'approved',
         createdBy: '5',
         receiverId: '4',
         organizationId: '5',
@@ -161,6 +168,7 @@ const initializeData = () => {
         raised: 75000,
         verified: true,
         active: true,
+        approvalStatus: 'approved',
         createdBy: '5',
         receiverId: '4',
         organizationId: '5',
@@ -182,6 +190,7 @@ const initializeData = () => {
         raised: 125000,
         verified: true,
         active: true,
+        approvalStatus: 'approved',
         createdBy: '5',
         receiverId: '4',
         organizationId: '5',
@@ -198,6 +207,8 @@ const initializeData = () => {
         id: 'camp5',
         title: 'Healthcare Camp in Rural Village',
         description: 'Free medical checkup and medicines for 500+ villagers without access to healthcare.',
+        // Mark as a service-type campaign so donors can initiate video calls with helpers
+        type: 'service',
         category: 'healthcare',
         goal: 80000,
         raised: 60000,
@@ -650,19 +661,28 @@ const api = {
       u.role === credentials.role
     );
     
-    if (user) {
-      const token = 'mock_token_' + user.id;
-      const { password, ...userWithoutPassword } = user;
-      return {
-        success: true,
-        token,
-        user: userWithoutPassword,
-        message: 'Login successful',
-        redirect: `/${user.role}`
-      };
+    if (!user) {
+      return { success: false, message: 'Invalid credentials' };
     }
     
-    return { success: false, message: 'Invalid credentials' };
+    // Check if user requires approval and is still pending
+    if (user.approvalStatus === 'pending') {
+      return { success: false, message: 'Your account is pending admin approval. Please wait for confirmation.' };
+    }
+    
+    if (user.approvalStatus === 'rejected') {
+      return { success: false, message: 'Your account registration was rejected by admin.' };
+    }
+    
+    const token = 'mock_token_' + user.id;
+    const { password, ...userWithoutPassword } = user;
+    return {
+      success: true,
+      token,
+      user: userWithoutPassword,
+      message: 'Login successful',
+      redirect: `/${user.role}`
+    };
   },
   
   register: async (userData) => {
@@ -672,11 +692,15 @@ const api = {
       return { success: false, message: 'Email already registered' };
     }
     
+    // Determine approval status: donors and helpers require admin approval
+    const requiresApproval = ['donor', 'helper'].includes(userData.role);
+    
     const newUser = {
       id: Date.now().toString(),
       ...userData,
       verified: false,
       kycStatus: 'pending',
+      approvalStatus: requiresApproval ? 'pending' : 'approved', // donors/helpers need approval
       trustScore: 50,
       createdAt: new Date().toISOString()
     };
@@ -684,12 +708,21 @@ const api = {
     users.push(newUser);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     
+    if (requiresApproval) {
+      return { success: true, message: 'Registration request submitted. Admin will review and approve your account.' };
+    }
+    
     return { success: true, message: 'Registration successful' };
   },
   
   // Campaign Management
   getCampaigns: async (filters = {}) => {
     let campaigns = JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMPAIGNS) || '[]');
+    
+    // By default, only show approved campaigns (unless explicitly requesting all)
+    if (filters.approvalStatus === undefined && !filters.includeAll) {
+      campaigns = campaigns.filter(c => c.approvalStatus === 'approved' || c.verified === true);
+    }
     
     if (filters.active !== undefined) {
       campaigns = campaigns.filter(c => c.active === filters.active);
@@ -700,18 +733,24 @@ const api = {
     if (filters.verified !== undefined) {
       campaigns = campaigns.filter(c => c.verified === filters.verified);
     }
+    if (filters.approvalStatus) {
+      campaigns = campaigns.filter(c => c.approvalStatus === filters.approvalStatus);
+    }
     
     return { success: true, data: campaigns };
   },
   
   createCampaign: async (campaignData) => {
     const campaigns = JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMPAIGNS) || '[]');
+    
+    // New campaigns created by donors/receivers require admin approval
     const newCampaign = {
       id: 'camp' + Date.now(),
       ...campaignData,
       raised: 0,
       verified: false,
-      active: true,
+      active: false, // Campaigns start inactive until approved
+      approvalStatus: 'pending', // Admin must approve before campaign goes live
       donorCount: 0,
       createdAt: new Date().toISOString()
     };
@@ -719,7 +758,7 @@ const api = {
     campaigns.push(newCampaign);
     localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(campaigns));
     
-    return { success: true, data: newCampaign };
+    return { success: true, data: newCampaign, message: 'Campaign created and submitted for admin approval.' };
   },
   
   // Donation Processing
@@ -1196,6 +1235,58 @@ const api = {
     return { success: true, data: kycDoc };
   },
   
+  // Admin: Approve/Reject User Registrations
+  approveUser: async ({ userId, approved, adminId }) => {
+    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    const user = users.find(u => u.id === userId);
+    
+    if (!user) return { success: false, message: 'User not found' };
+    
+    user.approvalStatus = approved ? 'approved' : 'rejected';
+    user.approvedBy = adminId;
+    user.approvedAt = new Date().toISOString();
+    
+    const userIndex = users.findIndex(u => u.id === userId);
+    users[userIndex] = user;
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    
+    return { success: true, data: user, message: approved ? 'User approved successfully' : 'User rejected' };
+  },
+  
+  // Admin: Approve/Reject Campaign
+  approveCampaign: async ({ campaignId, approved, adminId }) => {
+    const campaigns = JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMPAIGNS) || '[]');
+    const campaign = campaigns.find(c => c.id === campaignId);
+    
+    if (!campaign) return { success: false, message: 'Campaign not found' };
+    
+    campaign.approvalStatus = approved ? 'approved' : 'rejected';
+    campaign.verified = approved;
+    campaign.active = approved; // Only approved campaigns go active
+    campaign.approvedBy = adminId;
+    campaign.approvedAt = new Date().toISOString();
+    
+    const campaignIndex = campaigns.findIndex(c => c.id === campaignId);
+    campaigns[campaignIndex] = campaign;
+    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(campaigns));
+    
+    return { success: true, data: campaign, message: approved ? 'Campaign approved and is now live' : 'Campaign rejected' };
+  },
+  
+  // Admin: Get pending users (for approval queue)
+  getPendingUsers: async () => {
+    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    const pending = users.filter(u => u.approvalStatus === 'pending');
+    return { success: true, data: pending };
+  },
+  
+  // Admin: Get pending campaigns (for approval queue)
+  getPendingCampaigns: async () => {
+    const campaigns = JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMPAIGNS) || '[]');
+    const pending = campaigns.filter(c => c.approvalStatus === 'pending');
+    return { success: true, data: pending };
+  },
+  
   // Impact Tracking
   getImpactByQR: async (qrCode) => {
     const transactions = JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]');
@@ -1293,6 +1384,14 @@ window.fetch = async (url, options = {}) => {
       response = await api.uploadKYC(body);
     } else if (url.startsWith('/api/kyc/verify') && method === 'POST') {
       response = await api.verifyKYC(body.kycId, body.adminId, body.approved);
+    } else if (url === '/api/admin/approve-user' && method === 'POST') {
+      response = await api.approveUser(body);
+    } else if (url === '/api/admin/approve-campaign' && method === 'POST') {
+      response = await api.approveCampaign(body);
+    } else if (url === '/api/admin/pending-users' && method === 'GET') {
+      response = await api.getPendingUsers();
+    } else if (url === '/api/admin/pending-campaigns' && method === 'GET') {
+      response = await api.getPendingCampaigns();
     } else if (url.startsWith('/api/impact/')) {
       const qrCode = url.split('/').pop();
       response = await api.getImpactByQR(qrCode);

@@ -9,6 +9,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({});
   const [pendingRequests, setPendingRequests] = useState([]);
   const [pendingKYC, setPendingKYC] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]); // NEW: pending user approvals
+  const [pendingCampaigns, setPendingCampaigns] = useState([]); // NEW: pending campaign approvals
   const [campaigns, setCampaigns] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -58,6 +60,20 @@ const AdminDashboard = () => {
       // Load all users
       const users = window.__socialImpactApi.getData('USERS');
       setAllUsers(users || []);
+      
+      // Load pending users (donors/helpers awaiting approval)
+      const pendingUsersRes = await fetch('/api/admin/pending-users');
+      const pendingUsersData = await pendingUsersRes.json();
+      if (pendingUsersData.success) {
+        setPendingUsers(pendingUsersData.data || []);
+      }
+      
+      // Load pending campaigns (awaiting admin approval)
+      const pendingCampaignsRes = await fetch('/api/admin/pending-campaigns');
+      const pendingCampaignsData = await pendingCampaignsRes.json();
+      if (pendingCampaignsData.success) {
+        setPendingCampaigns(pendingCampaignsData.data || []);
+      }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
@@ -158,6 +174,58 @@ const AdminDashboard = () => {
       console.error('Error verifying KYC:', error);
     }
   };
+  
+  // NEW: Approve/Reject User Registration
+  const handleUserApproval = async (userId, approved) => {
+    try {
+      const response = await fetch('/api/admin/approve-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          approved,
+          adminId: user.id
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message);
+        loadDashboardData();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error approving user:', error);
+      alert('An error occurred while processing user approval');
+    }
+  };
+  
+  // NEW: Approve/Reject Campaign
+  const handleCampaignApproval = async (campaignId, approved) => {
+    try {
+      const response = await fetch('/api/admin/approve-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId,
+          approved,
+          adminId: user.id
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message);
+        loadDashboardData();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error approving campaign:', error);
+      alert('An error occurred while processing campaign approval');
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
@@ -254,16 +322,28 @@ const AdminDashboard = () => {
           ✅ KYC Verification ({pendingKYC.length})
         </button>
         <button
+          onClick={() => setActiveTab('pending-users')}
+          style={activeTab === 'pending-users' ? styles.tabActive : styles.tab}
+        >
+          👤 Pending Users ({pendingUsers.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('pending-campaigns')}
+          style={activeTab === 'pending-campaigns' ? styles.tabActive : styles.tab}
+        >
+          🚀 Pending Campaigns ({pendingCampaigns.length})
+        </button>
+        <button
           onClick={() => setActiveTab('campaigns')}
           style={activeTab === 'campaigns' ? styles.tabActive : styles.tab}
         >
-          🎯 Campaigns
+          🎯 All Campaigns
         </button>
         <button
           onClick={() => setActiveTab('users')}
           style={activeTab === 'users' ? styles.tabActive : styles.tab}
         >
-          👥 Users
+          👥 All Users
         </button>
         <button
           onClick={() => setActiveTab('impact')}
@@ -565,6 +645,200 @@ const AdminDashboard = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Pending Users Tab */}
+        {activeTab === 'pending-users' && (
+          <div>
+            <h2>👤 Pending User Approvals</h2>
+            <p style={{ color: '#718096', marginBottom: '20px' }}>
+              Review and approve new donor and helper registration requests. Approved users will be able to log in and participate.
+            </p>
+            
+            {pendingUsers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>
+                ✅ No pending user approvals at this time
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '15px' }}>
+                {pendingUsers.map(user => (
+                  <div key={user.id} style={{
+                    background: 'white',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                    border: '2px solid #fef3c7'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '1.5rem' }}>
+                            {user.role === 'donor' ? '💰' : user.role === 'helper' ? '🧑‍⚕️' : '👤'}
+                          </span>
+                          <h3 style={{ margin: 0, color: '#2d3748' }}>{user.name || user.username}</h3>
+                          <span style={{
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            background: user.role === 'donor' ? '#dcfce7' : '#dbeafe',
+                            color: user.role === 'donor' ? '#047857' : '#1e40af'
+                          }}>
+                            {user.role.toUpperCase()}
+                          </span>
+                        </div>
+                        <div style={{ color: '#718096', fontSize: '0.95rem', marginBottom: '6px' }}>
+                          📧 {user.email}
+                        </div>
+                        {user.profession && (
+                          <div style={{ color: '#718096', fontSize: '0.95rem', marginBottom: '6px' }}>
+                            🩺 Profession: <strong>{user.profession}</strong>
+                            {user.license && ` (License: ${user.license})`}
+                          </div>
+                        )}
+                        {user.phone && (
+                          <div style={{ color: '#718096', fontSize: '0.95rem', marginBottom: '6px' }}>
+                            📞 {user.phone}
+                          </div>
+                        )}
+                        <div style={{ color: '#a0aec0', fontSize: '0.85rem', marginTop: '8px' }}>
+                          Registered: {new Date(user.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          onClick={() => handleUserApproval(user.id, true)}
+                          style={{
+                            padding: '10px 20px',
+                            background: '#48bb78',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600'
+                          }}
+                        >
+                          ✅ Approve
+                        </button>
+                        <button
+                          onClick={() => handleUserApproval(user.id, false)}
+                          style={{
+                            padding: '10px 20px',
+                            background: '#f56565',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600'
+                          }}
+                        >
+                          ❌ Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pending Campaigns Tab */}
+        {activeTab === 'pending-campaigns' && (
+          <div>
+            <h2>🚀 Pending Campaign Approvals</h2>
+            <p style={{ color: '#718096', marginBottom: '20px' }}>
+              Review and approve new campaigns created by donors or receivers. Approved campaigns will be visible to all users and can receive donations.
+            </p>
+            
+            {pendingCampaigns.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>
+                ✅ No pending campaign approvals at this time
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '15px' }}>
+                {pendingCampaigns.map(campaign => (
+                  <div key={campaign.id} style={{
+                    background: 'white',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                    border: '2px solid #fef3c7'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                          <h3 style={{ margin: 0, color: '#2d3748' }}>{campaign.title}</h3>
+                          <span style={{
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            background: '#e0f2fe',
+                            color: '#075985'
+                          }}>
+                            {campaign.category?.toUpperCase() || 'GENERAL'}
+                          </span>
+                        </div>
+                        <p style={{ color: '#4a5568', fontSize: '0.95rem', marginBottom: '12px' }}>
+                          {campaign.description}
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                          <div style={{ color: '#718096', fontSize: '0.9rem' }}>
+                            💰 Goal: <strong>₹{campaign.goal?.toLocaleString('en-IN')}</strong>
+                          </div>
+                          <div style={{ color: '#718096', fontSize: '0.9rem' }}>
+                            📍 Location: {campaign.location?.address || 'Not specified'}
+                          </div>
+                          <div style={{ color: '#718096', fontSize: '0.9rem' }}>
+                            📅 Deadline: {campaign.deadline ? new Date(campaign.deadline).toLocaleDateString() : 'Not set'}
+                          </div>
+                          <div style={{ color: '#a0aec0', fontSize: '0.85rem' }}>
+                            Created: {new Date(campaign.createdAt).toLocaleString()}
+                          </div>
+                        </div>
+                        {campaign.createdBy && (
+                          <div style={{ color: '#a0aec0', fontSize: '0.85rem', marginTop: '6px' }}>
+                            Created by User ID: {campaign.createdBy}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', marginLeft: '20px' }}>
+                        <button
+                          onClick={() => handleCampaignApproval(campaign.id, true)}
+                          style={{
+                            padding: '10px 20px',
+                            background: '#48bb78',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600'
+                          }}
+                        >
+                          ✅ Approve
+                        </button>
+                        <button
+                          onClick={() => handleCampaignApproval(campaign.id, false)}
+                          style={{
+                            padding: '10px 20px',
+                            background: '#f56565',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600'
+                          }}
+                        >
+                          ❌ Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import VideoCall from '../../components/VideoCall';
 
 export default function DonorDashboard() {
   const [user, setUser] = useState(null);
@@ -12,6 +13,18 @@ export default function DonorDashboard() {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [donationAmount, setDonationAmount] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [videoCallDonation, setVideoCallDonation] = useState(null);
+  
+  // NEW: Campaign creation state
+  const [newCampaign, setNewCampaign] = useState({
+    title: '',
+    description: '',
+    category: 'medical',
+    goal: '',
+    deadline: '',
+    location: ''
+  });
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,6 +116,50 @@ export default function DonorDashboard() {
     localStorage.removeItem('currentUser');
     navigate('/');
   };
+  
+  // NEW: Handle campaign creation
+  const handleCreateCampaign = async (e) => {
+    e.preventDefault();
+    
+    if (!newCampaign.title || !newCampaign.description || !newCampaign.goal) {
+      alert('Please fill all required fields');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newCampaign,
+          goal: parseFloat(newCampaign.goal),
+          createdBy: user.id,
+          receiverId: user.id,
+          organizationName: user.name
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ ' + data.message);
+        // Reset form
+        setNewCampaign({
+          title: '',
+          description: '',
+          category: 'medical',
+          goal: '',
+          deadline: '',
+          location: ''
+        });
+        setActiveTab('campaigns');
+      } else {
+        alert('❌ Failed to create campaign: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      alert('An error occurred while creating the campaign');
+    }
+  };
 
   if (!user) return <div style={styles.loading}>Loading...</div>;
 
@@ -170,6 +227,12 @@ export default function DonorDashboard() {
           🎯 Active Campaigns
         </button>
         <button
+          onClick={() => setActiveTab('create')}
+          style={activeTab === 'create' ? styles.tabActive : styles.tab}
+        >
+          ➕ Create Campaign
+        </button>
+        <button
           onClick={() => setActiveTab('recommended')}
           style={activeTab === 'recommended' ? styles.tabActive : styles.tab}
         >
@@ -235,6 +298,109 @@ export default function DonorDashboard() {
           </div>
         )}
 
+        {/* Create Campaign */}
+        {activeTab === 'create' && (
+          <div>
+            <h2>➕ Create New Campaign</h2>
+            <p style={styles.subtitle}>
+              Submit a campaign for admin approval. Once approved, it will be visible to all donors.
+            </p>
+            <form onSubmit={handleCreateCampaign} style={styles.createForm}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Campaign Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter a compelling campaign title"
+                  value={newCampaign.title}
+                  onChange={(e) => setNewCampaign({...newCampaign, title: e.target.value})}
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Description *</label>
+                <textarea
+                  required
+                  placeholder="Describe your campaign, its purpose, and expected impact"
+                  value={newCampaign.description}
+                  onChange={(e) => setNewCampaign({...newCampaign, description: e.target.value})}
+                  style={{...styles.input, minHeight: '120px', resize: 'vertical'}}
+                  rows={5}
+                />
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Category *</label>
+                  <select
+                    required
+                    value={newCampaign.category}
+                    onChange={(e) => setNewCampaign({...newCampaign, category: e.target.value})}
+                    style={styles.input}
+                  >
+                    <option value="medical">Medical</option>
+                    <option value="education">Education</option>
+                    <option value="disaster">Disaster Relief</option>
+                    <option value="community">Community</option>
+                    <option value="environment">Environment</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Funding Goal (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1000"
+                    step="100"
+                    placeholder="100000"
+                    value={newCampaign.goal}
+                    onChange={(e) => setNewCampaign({...newCampaign, goal: e.target.value})}
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Campaign Deadline *</label>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={newCampaign.deadline}
+                    onChange={(e) => setNewCampaign({...newCampaign, deadline: e.target.value})}
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Location *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="City, State"
+                    value={newCampaign.location}
+                    onChange={(e) => setNewCampaign({...newCampaign, location: e.target.value})}
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.submitSection}>
+                <p style={styles.infoText}>
+                  ℹ️ Your campaign will be reviewed by an admin before going live. You'll be notified once it's approved.
+                </p>
+                <button type="submit" style={styles.submitBtn}>
+                  📤 Submit Campaign for Approval
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* AI Recommendations */}
         {activeTab === 'recommended' && (
           <div>
@@ -293,14 +459,24 @@ export default function DonorDashboard() {
                           <p>{donation.impactStory}</p>
                         </div>
                       )}
-                      {donation.qrCode && (
-                        <button
-                          onClick={() => navigate(`/impact/${donation.qrCode}`)}
-                          style={styles.trackBtn}
-                        >
-                          📊 Track Impact
-                        </button>
-                      )}
+                      <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+                        {donation.qrCode && (
+                          <button
+                            onClick={() => navigate(`/impact/${donation.qrCode}`)}
+                            style={styles.trackBtn}
+                          >
+                            📊 Track Impact
+                          </button>
+                        )}
+                        {campaign && campaign.type === 'service' && (
+                          <button
+                            onClick={() => setVideoCallDonation(donation)}
+                            style={styles.videoCallBtn}
+                          >
+                            📹 Video Call with Helper
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -421,6 +597,30 @@ export default function DonorDashboard() {
           </div>
         </div>
       )}
+
+      {/* Video Call Modal */}
+      {videoCallDonation && (
+        <VideoCall
+          serviceId={videoCallDonation.campaignId}
+          donorId={user.id}
+          helperId={videoCallDonation.helperId || 0}
+          userRole="donor"
+          onClose={() => setVideoCallDonation(null)}
+        />
+      )}
+
+      {/* DEV ONLY: Test Video Call Button (Floating) */}
+      <button
+        onClick={() => setVideoCallDonation({ 
+          campaignId: 'test-campaign-' + Date.now(), 
+          helperId: 'test-helper-1',
+          amount: 5000
+        })}
+        style={styles.testVideoButton}
+        title="Test Video Call (Donor ↔ Helper)"
+      >
+        🎥 Test Video Call
+      </button>
     </div>
   );
 }
@@ -683,6 +883,36 @@ const styles = {
     cursor: 'pointer',
     fontWeight: '600'
   },
+  videoCallBtn: {
+    marginTop: '15px',
+    padding: '10px 20px',
+    backgroundColor: '#9f7aea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '5px'
+  },
+  testVideoButton: {
+    position: 'fixed',
+    bottom: '30px',
+    right: '30px',
+    padding: '15px 25px',
+    backgroundColor: '#9f7aea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '1rem',
+    boxShadow: '0 4px 12px rgba(159, 122, 234, 0.4)',
+    zIndex: 10001,  // Higher than VoiceAssistant (9999) and VideoCall modal (10000)
+    transition: 'all 0.3s ease'
+  },
   impactGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
@@ -791,6 +1021,36 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '600'
+  },
+  createForm: {
+    backgroundColor: 'white',
+    padding: '30px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    maxWidth: '800px',
+    margin: '20px auto'
+  },
+  formGroup: {
+    marginBottom: '20px',
+    flex: 1
+  },
+  formRow: {
+    display: 'flex',
+    gap: '20px',
+    marginBottom: '20px'
+  },
+  submitSection: {
+    marginTop: '30px',
+    textAlign: 'center'
+  },
+  infoText: {
+    backgroundColor: '#ebf8ff',
+    padding: '15px',
+    borderRadius: '8px',
+    color: '#2c5282',
+    fontSize: '0.9rem',
+    marginBottom: '20px',
+    border: '1px solid #bee3f8'
   }
 };
 

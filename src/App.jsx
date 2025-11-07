@@ -19,11 +19,13 @@ import ImpactPage from "./pages/public/ImpactPage";
 import AnonymousDonation from "./pages/public/AnonymousDonation";
 import ImpactStories from "./pages/public/ImpactStories";
 import Chatbot from './components/Chatbot';
+import VoiceAssistant from './components/VoiceAssistant';
 
 function App() {
   return (
     <Router>
       <Chatbot />
+      <VoiceAssistant />
       <Routes>
         {/* ========== PUBLIC ROUTES (No Login Required) ========== */}
         <Route path="/" element={<Landing />} />

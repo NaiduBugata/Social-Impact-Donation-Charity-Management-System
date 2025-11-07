@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import VideoCall from '../../components/VideoCall';
 
 export default function HelperDashboard() {
   const [user, setUser] = useState(null);
@@ -11,6 +12,15 @@ export default function HelperDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [serviceProof, setServiceProof] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [videoCallService, setVideoCallService] = useState(null);
+  const [newService, setNewService] = useState({
+    title: '',
+    description: '',
+    category: 'medical',
+    skills: '',
+    availability: ''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,13 +41,30 @@ export default function HelperDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           location: currentUser.location || { lat: 28.7041, lng: 77.1025 },
-          radiusKm: 25,
+          // Increase default radius so seeded demo requests appear in most regions
+          radiusKm: 60,
           category: currentUser.specialty || 'all'
         })
       });
       const nearbyData = await nearbyRes.json();
       if (nearbyData.success) {
-        setNearbyRequests(nearbyData.data || []);
+        const results = nearbyData.data || [];
+        // Fallback: if nothing nearby, broaden radius to show demo data
+        if (results.length === 0) {
+          const wideRes = await fetch('/api/requests/nearby', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: currentUser.location || { lat: 28.7041, lng: 77.1025 },
+              radiusKm: 250,
+              category: currentUser.specialty || 'all'
+            })
+          });
+          const wideData = await wideRes.json();
+          setNearbyRequests(wideData.success ? (wideData.data || []) : []);
+        } else {
+          setNearbyRequests(results);
+        }
       }
 
       // Fetch helper's accepted/completed services
@@ -117,6 +144,50 @@ export default function HelperDashboard() {
     }
   };
 
+  const handleCreateService = async (e) => {
+    e.preventDefault();
+    
+    if (!newService.title.trim() || !newService.description.trim()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newService.title,
+          description: newService.description,
+          category: newService.category,
+          type: 'service', // Marking this as a service offer
+          organizerId: user.id,
+          skills: newService.skills.split(',').map(s => s.trim()).filter(Boolean),
+          availability: newService.availability,
+          location: user.location || 'Not specified'
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message || '✅ Service offer submitted! It will be reviewed by an admin before going live.');
+        setNewService({
+          title: '',
+          description: '',
+          category: 'medical',
+          skills: '',
+          availability: ''
+        });
+        setShowCreateForm(false);
+      } else {
+        alert('Failed to submit service offer: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error creating service offer:', error);
+      alert('An error occurred while submitting your service offer');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     navigate('/');
@@ -170,6 +241,94 @@ export default function HelperDashboard() {
             <div style={styles.statLabel}>Trust Score</div>
           </div>
         </div>
+      </div>
+
+      {/* Create Service Offer Section */}
+      <div style={styles.createServiceSection}>
+        <button 
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          style={styles.toggleFormBtn}
+        >
+          {showCreateForm ? '❌ Close Form' : '➕ Offer Your Service'}
+        </button>
+        
+        {showCreateForm && (
+          <form onSubmit={handleCreateService} style={styles.createForm}>
+            <h3 style={{marginBottom: '20px', color: '#2d3748'}}>Create Service Offer</h3>
+            <p style={styles.formInfo}>
+              ℹ️ Your service offer will be reviewed by an admin before being published.
+            </p>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Service Title *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g., Free Medical Checkups for Seniors"
+                value={newService.title}
+                onChange={(e) => setNewService({...newService, title: e.target.value})}
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Description *</label>
+              <textarea
+                required
+                placeholder="Describe the service you're offering and who can benefit from it"
+                value={newService.description}
+                onChange={(e) => setNewService({...newService, description: e.target.value})}
+                style={{...styles.input, minHeight: '100px', resize: 'vertical'}}
+                rows={4}
+              />
+            </div>
+
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Category *</label>
+                <select
+                  required
+                  value={newService.category}
+                  onChange={(e) => setNewService({...newService, category: e.target.value})}
+                  style={styles.input}
+                >
+                  <option value="medical">Medical</option>
+                  <option value="education">Education</option>
+                  <option value="food">Food Distribution</option>
+                  <option value="elderly">Elderly Care</option>
+                  <option value="skills">Skills Training</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Your Skills/Expertise</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Nursing, Teaching, Cooking (comma-separated)"
+                  value={newService.skills}
+                  onChange={(e) => setNewService({...newService, skills: e.target.value})}
+                  style={styles.input}
+                />
+              </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Availability</label>
+              <input
+                type="text"
+                placeholder="e.g., Weekends 10 AM - 4 PM, or Flexible"
+                value={newService.availability}
+                onChange={(e) => setNewService({...newService, availability: e.target.value})}
+                style={styles.input}
+              />
+            </div>
+
+            <button type="submit" style={styles.submitBtn}>
+              📤 Submit Service Offer
+            </button>
+          </form>
+        )}
       </div>
 
       <div style={styles.mainContent}>
@@ -227,12 +386,20 @@ export default function HelperDashboard() {
                     <span>Receiver: {service.receiver?.name}</span>
                     <span>Contact: {service.receiver?.phone || 'N/A'}</span>
                   </div>
-                  <button 
-                    onClick={() => setSelectedRequest(service)}
-                    style={styles.completeBtn}
-                  >
-                    ✓ Mark as Complete
-                  </button>
+                  <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+                    <button 
+                      onClick={() => setVideoCallService(service)}
+                      style={styles.videoCallBtn}
+                    >
+                      📹 Video Call with Donor
+                    </button>
+                    <button 
+                      onClick={() => setSelectedRequest(service)}
+                      style={styles.completeBtn}
+                    >
+                      ✓ Mark as Complete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -289,6 +456,31 @@ export default function HelperDashboard() {
           </div>
         </div>
       )}
+
+      {/* Video Call Modal */}
+      {videoCallService && (
+        <VideoCall
+          serviceId={videoCallService.id}
+          donorId={videoCallService.donorId || videoCallService.receiverId}
+          helperId={user.id}
+          userRole="helper"
+          onClose={() => setVideoCallService(null)}
+        />
+      )}
+
+      {/* DEV ONLY: Test Video Call Button (Floating) */}
+      <button
+        onClick={() => setVideoCallService({ 
+          id: 'test-service-' + Date.now(), 
+          donorId: 'test-donor-1',
+          receiverId: 'test-receiver-1',
+          request: { title: 'Test Video Call Connection' }
+        })}
+        style={styles.testVideoButton}
+        title="Test Video Call (Helper ↔ Donor)"
+      >
+        🎥 Test Video Call
+      </button>
     </div>
   );
 }
@@ -475,6 +667,7 @@ const styles = {
     color: '#718096'
   },
   completeBtn: {
+    flex: 1,
     padding: '10px 20px',
     backgroundColor: '#4299e1',
     color: 'white',
@@ -482,6 +675,20 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '600'
+  },
+  videoCallBtn: {
+    flex: 1,
+    padding: '10px 20px',
+    backgroundColor: '#9f7aea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '5px'
   },
   completedCard: {
     backgroundColor: '#f0fff4',
@@ -554,6 +761,75 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '600'
+  },
+  testVideoButton: {
+    position: 'fixed',
+    bottom: '30px',
+    right: '30px',
+    padding: '15px 25px',
+    backgroundColor: '#9f7aea',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '1rem',
+    boxShadow: '0 4px 12px rgba(159, 122, 234, 0.4)',
+    zIndex: 10001,  // Higher than VoiceAssistant (9999) and VideoCall modal (10000)
+    transition: 'all 0.3s ease'
+  },
+  createServiceSection: {
+    maxWidth: '1200px',
+    margin: '0 auto 30px',
+    padding: '0 20px'
+  },
+  toggleFormBtn: {
+    padding: '15px 30px',
+    backgroundColor: '#4299e1',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '1rem',
+    marginBottom: '20px',
+    boxShadow: '0 4px 6px rgba(66, 153, 225, 0.3)',
+    transition: 'background-color 0.2s'
+  },
+  createForm: {
+    backgroundColor: 'white',
+    padding: '30px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+  },
+  formInfo: {
+    backgroundColor: '#ebf8ff',
+    padding: '12px',
+    borderRadius: '8px',
+    color: '#2c5282',
+    fontSize: '0.9rem',
+    marginBottom: '20px',
+    border: '1px solid #bee3f8'
+  },
+  formGroup: {
+    marginBottom: '20px',
+    flex: 1
+  },
+  formRow: {
+    display: 'flex',
+    gap: '20px',
+    marginBottom: '20px'
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    border: '2px solid #e2e8f0',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    fontFamily: 'inherit',
+    transition: 'border-color 0.2s',
+    outline: 'none',
+    boxSizing: 'border-box'
   }
 };
 
