@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>Simple Video Call — Demo</title>
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; text-align: center; padding: 20px; }
+      #videos { margin-top: 16px; }
+      video { width: 320px; border: 1px solid #ccc; margin: 8px; }
+      input { padding: 8px; width: 260px; }
+      button { padding: 8px 12px; margin-left: 8px; }
+      #incoming { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Simple Video Call (Static Frontend)</h1>
+    <p>Your ID: <span id="my-id">—</span></p>
+
+    <div id="videos">
+      <video id="localVideo" playsinline autoplay muted></video>
+      <video id="remoteVideo" playsinline autoplay></video>
+    </div>
+
+    <div style="margin-top:14px;">
+      <input id="idToCall" placeholder="ID to call (paste here)" />
+      <button id="callBtn">📞 Call</button>
+    </div>
+
+    <div id="incoming" style="display:none;">
+      <p>Incoming call from <span id="callerId"></span></p>
+      <button id="answerBtn">Accept</button>
+    </div>
+
+    <!-- socket.io client is served by the server at /socket.io/socket.io.js -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- simple-peer via CDN -->
+    <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+    <script src="/client.js"></script>
+  </body>
+</html>
