@@ -34,7 +34,6 @@ const anonymousTrackerSchema = new mongoose.Schema({
   timestamps: true
 });
 
-anonymousTrackerSchema.index({ anonymousId: 1 });
 anonymousTrackerSchema.index({ email: 1 });
 
 module.exports = mongoose.model('AnonymousTracker', anonymousTrackerSchema);
