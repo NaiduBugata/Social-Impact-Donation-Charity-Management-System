@@ -24,5 +24,13 @@ const requestSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+requestSchema.index({ status: 1, createdAt: -1 });
+requestSchema.index({ category: 1 });
+requestSchema.index({ urgent: 1 });
+requestSchema.index({ completed: 1 });
+requestSchema.index({ userId: 1 });
+requestSchema.index({ location: '2dsphere' }); // For geospatial queries
+
 module.exports = mongoose.model('Request', requestSchema);
  

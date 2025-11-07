@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant - Available Voices Diagnostic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .stat {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .voice-card {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .voice-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .voice-card.missing {
+            border-left-color: #dc3545;
+            opacity: 0.6;
+        }
+        
+        .voice-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .voice-lang {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .voice-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .badge-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.3s;
+        }
+        
+        .test-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+        
+        .test-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            color: #856404;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-dot.available {
+            background: #28a745;
+        }
+        
+        .legend-dot.missing {
+            background: #dc3545;
+        }
+        
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: block;
+            margin: 20px auto;
+            transition: all 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Diagnostic Tool</h1>
+        <p class="subtitle">Check which text-to-speech voices are available on your system</p>
+        
+        <div class="summary" id="summary">
+            <div class="stat">
+                <span class="stat-number" id="totalVoices">0</span>
+                <span class="stat-label">Total Voices</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number" id="availableCount">0</span>
+                <span class="stat-label">Required Available</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number" id="missingCount">0</span>
+                <span class="stat-label">Required Missing</span>
+            </div>
+        </div>
+        
+        <button class="refresh-btn" onclick="loadVoices()">🔄 Refresh Voice List</button>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot available"></div>
+                <span>Voice Available</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot missing"></div>
+                <span>Voice Missing</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">✅ Required Languages (Voice Assistant Support)</h2>
+            <div class="voice-grid" id="requiredVoices"></div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">🌍 All Available Voices on Your System</h2>
+            <div class="voice-grid" id="allVoices"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 How to Install Missing Voices:</h3>
+            <ol>
+                <li><strong>Windows 10/11:</strong> Settings → Time & Language → Language & region → Add language → Select language → Check "Text-to-speech" → Install</li>
+                <li><strong>macOS:</strong> System Preferences → Accessibility → Spoken Content → System Voice → Customize → Download voices</li>
+                <li><strong>After installation:</strong> Close and reopen your browser, then click "🔄 Refresh Voice List" above</li>
+                <li><strong>Test voices:</strong> Click "Test" button on any voice card to hear a sample</li>
+            </ol>
+            <p style="margin-top: 15px; font-weight: bold;">💡 Tip: You don't need ALL voices. The Voice Assistant will use English as a fallback for missing languages!</p>
+        </div>
+    </div>
+    
+    <script>
+        // Required languages for Voice Assistant
+        const requiredLanguages = [
+            { code: 'en-US', name: 'English (United States)', flag: '🇺🇸' },
+            { code: 'en-IN', name: 'English (India)', flag: '🇮🇳' },
+            { code: 'hi-IN', name: 'Hindi (India)', flag: '🇮🇳' },
+            { code: 'te-IN', name: 'Telugu (India)', flag: '🇮🇳' },
+            { code: 'es-ES', name: 'Spanish (Spain)', flag: '🇪🇸' },
+            { code: 'fr-FR', name: 'French (France)', flag: '🇫🇷' },
+            { code: 'de-DE', name: 'German (Germany)', flag: '🇩🇪' },
+            { code: 'it-IT', name: 'Italian (Italy)', flag: '🇮🇹' },
+            { code: 'pt-BR', name: 'Portuguese (Brazil)', flag: '🇧🇷' },
+            { code: 'ja-JP', name: 'Japanese (Japan)', flag: '🇯🇵' },
+            { code: 'ko-KR', name: 'Korean (Korea)', flag: '🇰🇷' },
+            { code: 'zh-CN', name: 'Chinese (China)', flag: '🇨🇳' },
+            { code: 'ar-SA', name: 'Arabic (Saudi Arabia)', flag: '🇸🇦' },
+            { code: 'ru-RU', name: 'Russian (Russia)', flag: '🇷🇺' }
+        ];
+        
+        let currentUtterance = null;
+        
+        function testVoice(voiceName, lang, text) {
+            // Stop any ongoing speech
+            if (currentUtterance) {
+                speechSynthesis.cancel();
+            }
+            
+            const voices = speechSynthesis.getVoices();
+            const voice = voices.find(v => v.name === voiceName);
+            
+            if (voice) {
+                currentUtterance = new SpeechSynthesisUtterance(text);
+                currentUtterance.voice = voice;
+                currentUtterance.lang = lang;
+                currentUtterance.rate = 0.9;
+                currentUtterance.pitch = 1;
+                currentUtterance.volume = 1;
+                
+                currentUtterance.onend = () => {
+                    currentUtterance = null;
+                };
+                
+                speechSynthesis.speak(currentUtterance);
+            }
+        }
+        
+        function loadVoices() {
+            const voices = speechSynthesis.getVoices();
+            
+            console.log('📢 Total voices found:', voices.length);
+            voices.forEach(voice => {
+                console.log(`  - ${voice.name} (${voice.lang})`);
+            });
+            
+            // Update summary
+            document.getElementById('totalVoices').textContent = voices.length;
+            
+            // Check required languages
+            const requiredVoicesContainer = document.getElementById('requiredVoices');
+            requiredVoicesContainer.innerHTML = '';
+            
+            let availableCount = 0;
+            let missingCount = 0;
+            
+            requiredLanguages.forEach(lang => {
+                const langCode = lang.code.split('-')[0];
+                
+                // Try exact match first, then language code match
+                let voice = voices.find(v => v.lang === lang.code);
+                if (!voice) {
+                    voice = voices.find(v => v.lang.startsWith(langCode));
+                }
+                
+                const isAvailable = !!voice;
+                if (isAvailable) availableCount++;
+                else missingCount++;
+                
+                const card = document.createElement('div');
+                card.className = `voice-card ${isAvailable ? '' : 'missing'}`;
+                
+                const testText = getTestText(lang.code);
+                
+                card.innerHTML = `
+                    <div class="voice-name">${lang.flag} ${lang.name}</div>
+                    <div class="voice-lang">${lang.code}</div>
+                    <span class="voice-badge ${isAvailable ? 'badge-available' : 'badge-missing'}">
+                        ${isAvailable ? '✅ Available' : '❌ Missing'}
+                    </span>
+                    ${isAvailable ? `
+                        <div><small>Voice: ${voice.name}</small></div>
+                        <button class="test-btn" onclick="testVoice('${voice.name}', '${voice.lang}', '${testText}')">
+                            🔊 Test Voice
+                        </button>
+                    ` : `
+                        <div><small style="color: #dc3545;">Will use English fallback</small></div>
+                    `}
+                `;
+                
+                requiredVoicesContainer.appendChild(card);
+            });
+            
+            document.getElementById('availableCount').textContent = availableCount;
+            document.getElementById('missingCount').textContent = missingCount;
+            
+            // Show all available voices
+            const allVoicesContainer = document.getElementById('allVoices');
+            allVoicesContainer.innerHTML = '';
+            
+            voices.forEach(voice => {
+                const card = document.createElement('div');
+                card.className = 'voice-card';
+                
+                const testText = getTestText(voice.lang);
+                
+                card.innerHTML = `
+                    <div class="voice-name">${voice.name}</div>
+                    <div class="voice-lang">${voice.lang}</div>
+                    <span class="voice-badge badge-available">✅ Installed</span>
+                    <button class="test-btn" onclick="testVoice('${voice.name}', '${voice.lang}', '${testText}')">
+                        🔊 Test Voice
+                    </button>
+                `;
+                
+                allVoicesContainer.appendChild(card);
+            });
+        }
+        
+        function getTestText(langCode) {
+            const testPhrases = {
+                'en': 'Hello! This is a test of the voice assistant.',
+                'hi': 'नमस्ते! यह वॉयस असिस्टेंट का परीक्षण है।',
+                'te': 'నమస్కారం! ఇది వాయిస్ అసిస్టెంట్ పరీక్ష.',
+                'es': '¡Hola! Esta es una prueba del asistente de voz.',
+                'fr': 'Bonjour! Ceci est un test de l\'assistant vocal.',
+                'de': 'Hallo! Dies ist ein Test des Sprachassistenten.',
+                'it': 'Ciao! Questo è un test dell\'assistente vocale.',
+                'pt': 'Olá! Este é um teste do assistente de voz.',
+                'ja': 'こんにちは！これは音声アシスタントのテストです。',
+                'ko': '안녕하세요! 음성 비서 테스트입니다.',
+                'zh': '你好！这是语音助手的测试。',
+                'ar': 'مرحبا! هذا اختبار للمساعد الصوتي.',
+                'ru': 'Привет! Это тест голосового помощника.'
+            };
+            
+            const code = langCode.split('-')[0];
+            return testPhrases[code] || testPhrases['en'];
+        }
+        
+        // Load voices on page load
+        window.addEventListener('load', () => {
+            // Chrome loads voices asynchronously
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.addEventListener('voiceschanged', loadVoices);
+            } else {
+                loadVoices();
+            }
+        });
+        
+        // Stop speech when leaving page
+        window.addEventListener('beforeunload', () => {
+            speechSynthesis.cancel();
+        });
+    </script>
+</body>
+</html>

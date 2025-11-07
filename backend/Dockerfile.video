@@ -1,0 +1,17 @@
+# Video Server Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy video server file
+COPY video-server.js ./
+COPY package*.json ./
+
+# Install only socket.io for video server
+RUN npm install socket.io
+
+EXPOSE 5001
+
+ENV NODE_ENV=production
+
+CMD ["node", "video-server.js"]

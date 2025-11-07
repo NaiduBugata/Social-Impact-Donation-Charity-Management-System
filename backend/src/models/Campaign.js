@@ -27,5 +27,12 @@ const campaignSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+campaignSchema.index({ status: 1, createdAt: -1 });
+campaignSchema.index({ category: 1 });
+campaignSchema.index({ verified: 1 });
+campaignSchema.index({ active: 1 });
+campaignSchema.index({ createdBy: 1 });
+
 module.exports = mongoose.model('Campaign', campaignSchema);
  

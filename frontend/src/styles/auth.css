@@ -1,0 +1,163 @@
+/* Shared styling for Login/Signup standalone pages (Donor/Helper/Receiver etc.) */
+
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  padding: 24px 12px 40px;
+  line-height: 1.6;
+  position: relative;
+}
+
+.auth-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 50%, rgba(74, 144, 226, 0.15), transparent 30%);
+  pointer-events: none;
+}
+
+.auth-header {
+  max-width: 600px; /* align with card width */
+  margin: 0 auto 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-role-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.auth-title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.auth-back {
+  text-decoration: none;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.auth-card {
+  max-width: 600px; /* narrower card to match content */
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 2px solid #4A90E2; /* matching blue border */
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+.auth-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.auth-field label {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #2c3e50;
+}
+
+.auth-field input,
+.auth-field select,
+.auth-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color .2s ease;
+  background: #fff;
+}
+
+.auth-field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.auth-field input:focus,
+.auth-field select:focus,
+.auth-field textarea:focus {
+  border-color: #667eea;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+
+.auth-help {
+  margin-top: 10px;
+  color: #4a5568;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 480px) {
+  .auth-card { padding: 12px; }
+  .auth-title { font-size: 1.15rem; }
+}
+
+/* === Dark Theme Overrides === */
+body.dark .auth-page {
+  background: linear-gradient(135deg, #0b1220 0%, #0f172a 100%);
+}
+body.dark .auth-page::before {
+  background: radial-gradient(circle at 20% 50%, rgba(147, 197, 253, 0.18), transparent 30%);
+}
+body.dark .auth-title { color: #e5e7eb; }
+body.dark .auth-subtitle { color: #cbd5e1; }
+body.dark .auth-card {
+  background: #0f172a;
+  border-color: #4A90E2;
+  color: #e5e7eb;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.5);
+}
+body.dark .auth-field label { color: #e5e7eb; }
+body.dark .auth-field input,
+body.dark .auth-field select,
+body.dark .auth-field textarea {
+  background: #0b1220;
+  color: #e5e7eb;
+  border-color: #334155;
+}
+body.dark .auth-field input:focus,
+body.dark .auth-field select:focus,
+body.dark .auth-field textarea:focus {
+  border-color: #93c5fd;
+}
+body.dark .auth-help { color: #cbd5e1; }

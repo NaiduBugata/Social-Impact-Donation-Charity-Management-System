@@ -1,5 +1,7 @@
 const Transaction = require('../models/Transaction');
 const Campaign = require('../models/Campaign');
+const User = require('../models/User');
+const { sendDonationConfirmationEmail, sendDonationReceivedEmail } = require('../services/emailService');
 
 // Helper to generate QR code
 const generateQRCode = () => {
@@ -51,6 +53,75 @@ const createDonation = async (req, res) => {
     // Update campaign totals
     await Campaign.findByIdAndUpdate(campaignId, { 
       $inc: { raised: amount, donorCount: 1 } 
+    });
+
+    // Send emails to both donor and receiver
+    const emailPromises = [];
+
+    // 1. Send donation confirmation email to donor (only if not anonymous)
+    if (!isAnonymous && donorId) {
+      const donorEmailPromise = (async () => {
+        try {
+          const donor = await User.findById(donorId);
+          if (donor && donor.email) {
+            const emailResult = await sendDonationConfirmationEmail(donor.email, {
+              donorName: donor.name || 'Valued Donor',
+              amount: amount,
+              campaignTitle: campaign.title,
+              campaignCategory: campaign.category || 'General',
+              transactionId: txn._id.toString(),
+              date: txn.createdAt,
+              isAnonymous: false,
+              impactStory: impactStory
+            });
+            
+            if (emailResult.success) {
+              console.log(`✅ Donation confirmation email sent to donor: ${donor.email}`);
+            } else {
+              console.error(`⚠️ Failed to send donor email:`, emailResult.error);
+            }
+          }
+        } catch (emailError) {
+          console.error('⚠️ Donor email sending failed:', emailError.message);
+        }
+      })();
+      emailPromises.push(donorEmailPromise);
+    }
+
+    // 2. Send donation received notification to receiver/beneficiary
+    if (campaign.createdBy) {
+      const receiverEmailPromise = (async () => {
+        try {
+          const receiver = await User.findById(campaign.createdBy);
+          if (receiver && receiver.email) {
+            const donorInfo = !isAnonymous && donorId ? await User.findById(donorId) : null;
+            const emailResult = await sendDonationReceivedEmail(receiver.email, {
+              receiverName: receiver.name || 'Campaign Owner',
+              amount: amount,
+              donorName: donorInfo ? donorInfo.name : 'Anonymous Donor',
+              campaignTitle: campaign.title,
+              campaignCategory: campaign.category || 'General',
+              transactionId: txn._id.toString(),
+              date: txn.createdAt,
+              isAnonymous: isAnonymous
+            });
+            
+            if (emailResult.success) {
+              console.log(`✅ Donation received notification sent to receiver: ${receiver.email}`);
+            } else {
+              console.error(`⚠️ Failed to send receiver email:`, emailResult.error);
+            }
+          }
+        } catch (emailError) {
+          console.error('⚠️ Receiver email sending failed:', emailError.message);
+        }
+      })();
+      emailPromises.push(receiverEmailPromise);
+    }
+
+    // Wait for all emails to be sent (but don't block the response)
+    Promise.all(emailPromises).catch(err => {
+      console.error('⚠️ Some emails failed to send:', err.message);
     });
 
     res.status(201).json({ 

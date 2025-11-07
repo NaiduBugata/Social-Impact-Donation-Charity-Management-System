@@ -1,1 +1,73 @@
- 
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6
+    container_name: donation-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=donationDB
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - donation-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/donationDB --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API Server
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: donation-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/donationDB
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=7d
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - MAIL_FROM=${MAIL_FROM}
+      - FRONTEND_URL=${FRONTEND_URL}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - donation-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Video Server
+  video-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.video
+    container_name: donation-video-server
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+    networks:
+      - donation-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  donation-network:
+    driver: bridge
