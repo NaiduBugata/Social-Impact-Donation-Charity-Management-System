@@ -1,9 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../styles/universal.css";
 
 function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  // Initialize dark mode state from localStorage
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark';
+    }
+    return false;
+  });
+
+  // Apply theme to body class and persist to localStorage
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+    
+    try {
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    } catch (e) {
+      console.error('Failed to save theme preference', e);
+    }
+  }, [isDark]);
 
   return (
     <div className="main-container"> {/* Added wrapper div */}
@@ -35,6 +57,17 @@ function LandingPage() {
               </Link>
             </li>
           </ul>
+          
+          {/* Theme Toggle Button */}
+          <button
+            className="theme-toggle"
+            onClick={() => setIsDark((v) => !v)}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle dark mode"
+          >
+            {isDark ? '☀' : '🌙'}
+          </button>
+          
           <div
             className="menu-toggle"
             onClick={() => setMenuOpen((prev) => !prev)}
@@ -129,17 +162,17 @@ function LandingPage() {
           <div className="step">
             <div className="step-number">1</div>
             <h3>Choose Your Role</h3>
-            <p>Financial Donor, Service Helper (doctor/teacher/police), Receiver, or NGO — everyone has a place.</p>
+            {/* <p>Financial Donor, Service Helper (doctor/teacher/police), Receiver, or NGO — everyone has a place.</p> */}
           </div>
           <div className="step">
             <div className="step-number">2</div>
             <h3>Complete KYC Verification</h3>
-            <p>Quick verification ensures trust and transparency — upload documents and get verified by admin.</p>
+            {/* <p>Quick verification ensures trust and transparency — upload documents and get verified by admin.</p> */}
           </div>
           <div className="step">
             <div className="step-number">3</div>
             <h3>Engage & Track Impact</h3>
-            <p>Donate, volunteer, or request help — then track every action with real-time analytics and QR codes.</p>
+            {/* <p>Donate, volunteer, or request help — then track every action with real-time analytics and QR codes.</p> */}
           </div>
         </div>
       </section>

@@ -15,29 +15,37 @@ const AuthForm = () => {
   const [registerData, setRegisterData] = useState({ username: '', email: '', password: '' });
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  // Initialize dark mode state from localStorage
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark';
+    }
+    return false;
+  });
   const navigate = useNavigate();
 
-  // Get selected role and dark mode from localStorage on component mount
+  // Get selected role from localStorage on component mount
   React.useEffect(() => {
     const selectedRole = localStorage.getItem('selectedRole');
     if (selectedRole) {
       setUserRole(selectedRole);
     }
-    
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-    if (savedDarkMode) {
-      document.body.classList.add('dark-mode');
-    }
   }, []);
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    localStorage.setItem('darkMode', (!darkMode).toString());
-    document.body.classList.toggle('dark-mode');
-  };
+  // Apply theme to body class and persist to localStorage
+  React.useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+    
+    try {
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    } catch (e) {
+      console.error('Failed to save theme preference', e);
+    }
+  }, [isDark]);
 
   // Role-specific configurations
   const getRoleConfig = () => {
@@ -242,33 +250,14 @@ const AuthForm = () => {
             </li>
           </ul>
           
-          {/* Dark Mode Toggle */}
+          {/* Theme Toggle Button */}
           <button
-            onClick={toggleDarkMode}
-            style={{
-              background: darkMode ? '#1a202c' : '#fff',
-              color: darkMode ? '#fff' : '#1a202c',
-              border: `2px solid ${darkMode ? '#4299e1' : '#e2e8f0'}`,
-              padding: '8px 16px',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '18px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginRight: '15px',
-              transition: 'all 0.3s ease',
-              fontWeight: '600'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
+            className="theme-toggle"
+            onClick={() => setIsDark((v) => !v)}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle dark mode"
           >
-            {darkMode ? '🌙' : '☀️'}
-            {darkMode ? 'Dark' : 'Light'}
+            {isDark ? '☀' : '🌙'}
           </button>
           
           <div
@@ -316,7 +305,7 @@ const AuthForm = () => {
             e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
           }}
         >
-          ← Back to Roles
+           Back to Roles
         </button>
 
         {/* Login Form */}
